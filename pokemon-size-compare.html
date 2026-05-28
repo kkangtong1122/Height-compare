@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>포켓몬 크기 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@300;500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<style>
+:root{--bg:#0f0f13;--surface:#18181f;--surface2:#21212b;--border:#2e2e3a;--ink:#f0eff8;--muted:#7a7990;--accent:#ff3d5a;--shiny:#f7c948;--sh:0 2px 24px rgba(0,0,0,.45)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);min-height:100dvh;overflow-x:hidden}
+
+header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-ball{width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,var(--accent) 50%,#fff 50%);border:2.5px solid var(--ink);position:relative;flex-shrink:0}
+.logo-ball::after{content:'';position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid var(--ink);top:50%;left:50%;transform:translate(-50%,-50%)}
+.logo-text{font-family:'Gmarket Sans',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.02em}
+.logo-text span{color:var(--accent)}
+.header-r{margin-left:auto;display:flex;align-items:center;gap:10px}
+.idx-status{font-size:11px;color:var(--muted);white-space:nowrap}
+
+.layout{display:grid;grid-template-columns:300px 1fr;height:calc(100dvh - 57px)}
+@media(max-width:768px){.layout{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto}}
+
+.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:768px){.sidebar{border-right:none;border-bottom:1px solid var(--border)}}
+.sidebar-inner{padding:14px;display:flex;flex-direction:column;gap:11px}
+
+.sec-title{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+
+.search-wrap{position:relative}
+.search-input{width:100%;font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 36px 10px 12px;outline:none;transition:border-color .2s,box-shadow .2s}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,61,90,.15)}
+.search-input::placeholder{color:var(--muted)}
+.search-ico{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.ac{position:absolute;z-index:50;left:0;right:0;top:calc(100% + 4px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh);overflow:hidden;max-height:250px;overflow-y:auto;display:none}
+.ac.open{display:block}
+.ac-item{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;background:none;border:none;border-bottom:1px solid var(--border);font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer;text-align:left}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.sel{background:rgba(255,61,90,.08);color:var(--accent)}
+.ac-num{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.row{display:flex;gap:8px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;flex:1}
+.field label{font-size:11px;color:var(--muted);font-weight:500}
+.sel-wrap{position:relative}
+.sel-wrap::after{content:'▾';position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:10px}
+select{width:100%;font-family:inherit;font-size:13px;color:var(--ink);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 24px 9px 10px;-webkit-appearance:none;outline:none;cursor:pointer}
+select:focus{border-color:var(--accent)}
+
+.shiny-col{display:flex;flex-direction:column;gap:4px;align-items:center}
+.shiny-col label{font-size:11px;color:var(--muted);font-weight:500}
+.toggle{width:42px;height:23px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;position:relative;transition:background .2s,border-color .2s;flex-shrink:0}
+.toggle.on{background:var(--shiny);border-color:var(--shiny)}
+.toggle::after{content:'';position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle.on::after{transform:translateX(19px)}
+
+.btn-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;background:var(--accent);color:#fff;border:none;transition:opacity .15s,transform .1s;box-shadow:0 2px 10px rgba(255,61,90,.3)}
+.btn-add:active{transform:scale(.97)}
+.btn-add:disabled{opacity:.35;cursor:not-allowed;transform:none}
+
+.divider{height:1px;background:var(--border);margin:2px 0}
+
+.queue{display:flex;flex-direction:column;gap:4px}
+.qi{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:6px 8px;cursor:pointer;transition:border-color .15s}
+.qi:hover{border-color:var(--muted)}
+.qi img{width:34px;height:34px;object-fit:contain;image-rendering:-webkit-optimize-contrast}
+.qi-info{flex:1;overflow:hidden}
+.qi-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qi-sub{font-size:10px;color:var(--muted)}
+.qi-del{width:20px;height:20px;border-radius:4px;background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.qi-del:hover{background:rgba(255,61,90,.15);color:var(--accent);border-color:var(--accent)}
+.s-badge{font-size:8px;background:var(--shiny);color:#000;border-radius:3px;padding:1px 3px;font-weight:700;margin-left:3px;vertical-align:middle}
+
+.human-sec{display:flex;flex-direction:column;gap:7px}
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;color:var(--muted);font-size:12px;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(255,61,90,.04)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.up-preview{display:flex;gap:8px;align-items:center}
+.up-preview img{width:40px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
+.up-info{flex:1}
+.h-row{display:flex;gap:6px;align-items:flex-end;margin-top:5px}
+.num-input{width:100%;font-family:inherit;font-size:13px;color:var(--ink);background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 9px;outline:none}
+.num-input:focus{border-color:var(--accent)}
+.btn-sm{padding:8px 11px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--ink);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm:disabled{opacity:.35;cursor:not-allowed}
+
+.canvas-wrap{display:flex;flex-direction:column;height:calc(100dvh - 57px)}
+@media(max-width:768px){.canvas-wrap{height:480px}}
+.toolbar{display:flex;gap:6px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.tb-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--ink);font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tb-btn:hover{border-color:var(--muted)}
+.tb-btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.tb-btn:disabled{opacity:.3;cursor:not-allowed}
+.tb-sep{width:1px;height:18px;background:var(--border);margin:0 1px}
+.tb-count{font-size:11px;color:var(--muted);margin-left:auto}
+.zoom-grp{display:flex;gap:3px;align-items:center}
+.zoom-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--ink);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.zoom-btn:hover{border-color:var(--muted)}
+.zoom-lbl{font-size:11px;color:var(--muted);min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+
+.canvas-area{flex:1;overflow:hidden;position:relative;background:var(--bg);background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:40px 40px}
+.canvas-area canvas{display:block}
+.empty-st{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);pointer-events:none;user-select:none}
+.empty-st .e-ico{font-size:40px;opacity:.25}
+.empty-st p{font-size:13px;opacity:.45}
+
+.ov{position:fixed;inset:0;background:rgba(15,15,19,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:12px;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.show{opacity:1;pointer-events:all}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ov-txt{font-size:13px;color:var(--muted)}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:9px 18px;border-radius:999px;font-size:13px;z-index:1000;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:var(--sh)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-ball"></div>
+    <div class="logo-text">포켓몬 <span>크기비교</span></div>
+  </div>
+  <div class="header-r">
+    <div class="idx-status" id="idxStatus">이름 로딩 중…</div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <div>
+        <div class="sec-title">🔴 포켓몬 추가</div>
+        <div class="search-wrap">
+          <input id="searchInput" class="search-input" type="text"
+            placeholder="한국어 또는 영어로 검색" autocomplete="off" autocapitalize="off">
+          <svg class="search-ico" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <div class="ac" id="ac"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>폼 선택</label>
+          <div class="sel-wrap">
+            <select id="formSel" disabled><option value="">포켓몬을 먼저 선택</option></select>
+          </div>
+        </div>
+        <div class="shiny-col">
+          <label>✨ 샤이니</label>
+          <div class="toggle" id="shinyTgl" onclick="toggleShiny()"></div>
+        </div>
+      </div>
+
+      <button class="btn-add" id="addBtn" onclick="addToCanvas()" disabled>+ 캔버스에 추가</button>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="sec-title">📋 추가된 목록</div>
+        <div class="queue" id="queue">
+          <div style="color:var(--muted);font-size:12px;text-align:center;padding:6px 0">아직 없어요</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="human-sec">
+        <div class="sec-title">🧍 사람 추가</div>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="humanFile" accept="image/*" onchange="onHumanFile(event)">
+          <div>📁 이미지 클릭 또는 드래그</div>
+        </div>
+        <div id="humanPreview" style="display:none" class="up-preview">
+          <img id="humanThumb" src="" alt="">
+          <div class="up-info">
+            <div style="font-size:11px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:140px" id="humanFname"></div>
+            <div class="h-row">
+              <div class="field" style="max-width:80px">
+                <label>키 (cm)</label>
+                <input type="number" class="num-input" id="humanH" value="170" min="30" max="400">
+              </div>
+              <button class="btn-sm" onclick="resetHuman()">✕</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn-sm" id="addHumanBtn" onclick="addHumanToCanvas()" disabled>🧍 캔버스에 추가</button>
+      </div>
+
+    </div>
+  </aside>
+
+  <div class="canvas-wrap">
+    <div class="toolbar">
+      <button class="tb-btn pri" onclick="sortByHeight()">📏 키순 정렬</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" onclick="removeSelected()">✂ 선택 삭제</button>
+      <button class="tb-btn" onclick="clearCanvas()">🗑 전체 삭제</button>
+      <div class="tb-sep"></div>
+      <div class="zoom-grp">
+        <button class="zoom-btn" onclick="zoomCanvas(-1)">−</button>
+        <div class="zoom-lbl" id="zoomLbl">100%</div>
+        <button class="zoom-btn" onclick="zoomCanvas(1)">+</button>
+      </div>
+      <button class="tb-btn" onclick="resetView()">⊡ 리셋</button>
+      <div class="tb-count" id="cnt">0개</div>
+    </div>
+    <div class="canvas-area" id="cArea">
+      <div class="empty-st" id="emptySt">
+        <div class="e-ico">🎮</div>
+        <p>포켓몬을 추가해보세요 · Del키로 삭제</p>
+      </div>
+      <canvas id="c"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov"><div class="spinner"></div><div class="ov-txt" id="ovTxt">불러오는 중…</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API='https://pokeapi.co/api/v2/';
+let koIndex=[];       // [{ko, en, id}]
+let koLoaded=false;   // 전체 한국어 로드 완료 여부
+let selectedSpecies=null;
+let isShiny=false;
+let fc;
+let items=[];
+let uid=0;
+let dbTimer;
+let acIdx=-1;
+let currentZoom=1;
+
+window.addEventListener('DOMContentLoaded',()=>{
+  initCanvas();
+  loadFullIndex();
+  initDrag();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CANVAS
+// ══════════════════════════════════════════════════════════════════════════════
+function initCanvas(){
+  fc=new fabric.Canvas('c',{selection:true,preserveObjectStacking:true,allowTouchScrolling:false});
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+
+  // Del / Backspace 삭제
+  document.addEventListener('keydown',e=>{
+    const tag=document.activeElement?.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+    if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();removeSelected();}
+  });
+
+  // 마우스 휠 줌
+  fc.on('mouse:wheel',opt=>{
+    const delta=opt.e.deltaY;
+    let z=fc.getZoom()*(delta>0?0.92:1.08);
+    z=Math.min(Math.max(z,0.1),5);
+    fc.zoomToPoint({x:opt.e.offsetX,y:opt.e.offsetY},z);
+    currentZoom=z;
+    updateZoomLabel();
+    opt.e.preventDefault();opt.e.stopPropagation();
+  });
+
+  // 우클릭 + 드래그로 패닝 (Shift+드래그도 가능)
+  let panning=false;
+  fc.on('mouse:down',opt=>{
+    if(opt.e.altKey||opt.e.button===1){panning=true;fc.selection=false;fc.setCursor('grabbing');}
+  });
+  fc.on('mouse:move',opt=>{
+    if(panning){
+      fc.relativePan({x:opt.e.movementX,y:opt.e.movementY});
+    }
+  });
+  fc.on('mouse:up',()=>{panning=false;fc.selection=true;fc.setCursor('default');});
+}
+
+function resizeCanvas(){
+  const a=document.getElementById('cArea');
+  fc.setWidth(a.clientWidth);
+  fc.setHeight(a.clientHeight);
+  fc.renderAll();
+}
+
+function zoomCanvas(dir){
+  let z=currentZoom+(dir>0?0.15:-0.15);
+  z=Math.min(Math.max(z,0.1),5);
+  const center={x:fc.width/2,y:fc.height/2};
+  fc.zoomToPoint(center,z);
+  currentZoom=z;
+  updateZoomLabel();
+}
+
+function updateZoomLabel(){
+  document.getElementById('zoomLbl').textContent=Math.round(currentZoom*100)+'%';
+}
+
+function resetView(){
+  fc.setZoom(1);
+  fc.viewportTransform=[1,0,0,1,0,0];
+  currentZoom=1;
+  updateZoomLabel();
+  fc.renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INDEX LOAD — 전체 한국어 이름을 백그라운드로 캐싱
+// ══════════════════════════════════════════════════════════════════════════════
+async function loadFullIndex(){
+  const statusEl=document.getElementById('idxStatus');
+  try{
+    statusEl.textContent='포켓몬 목록 로딩 중…';
+    const r=await fetch(API+'pokemon-species?limit=1302&offset=0');
+    const d=await r.json();
+    koIndex=d.results.map(x=>({
+      ko:null, en:x.name,
+      id:parseInt(x.url.split('/').filter(Boolean).pop())
+    }));
+    statusEl.textContent=`0 / ${koIndex.length} 한국어 이름 로딩 중…`;
+    // 전체를 50개 단위로 백그라운드 fetch
+    await fetchAllKoNames(statusEl);
+  }catch(e){
+    statusEl.textContent='목록 로드 실패';
+    showToast('목록 로드 실패 — 영어 이름으로 검색해보세요');
+  }
+}
+
+async function fetchAllKoNames(statusEl){
+  const BATCH=50;
+  let loaded=0;
+  for(let i=0;i<koIndex.length;i+=BATCH){
+    const chunk=koIndex.slice(i,i+BATCH);
+    await Promise.all(chunk.map(async item=>{
+      try{
+        const r=await fetch(API+'pokemon-species/'+item.id);
+        const d=await r.json();
+        const k=d.names.find(n=>n.language.name==='ko');
+        if(k) item.ko=k.name;
+      }catch{}
+    }));
+    loaded+=chunk.length;
+    if(statusEl) statusEl.textContent=`${loaded} / ${koIndex.length} 이름 로딩 중…`;
+  }
+  koLoaded=true;
+  if(statusEl) statusEl.textContent=`✅ ${koIndex.length}종 로드 완료`;
+  setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SEARCH / AUTOCOMPLETE
+// ══════════════════════════════════════════════════════════════════════════════
+const si=document.getElementById('searchInput');
+const acEl=document.getElementById('ac');
+si.addEventListener('input',()=>{clearTimeout(dbTimer);dbTimer=setTimeout(doSearch,120);});
+si.addEventListener('keydown',e=>{
+  const its=[...acEl.querySelectorAll('.ac-item')];
+  if(e.key==='ArrowDown'){e.preventDefault();acIdx=Math.min(acIdx+1,its.length-1);paintAc(its);}
+  else if(e.key==='ArrowUp'){e.preventDefault();acIdx=Math.max(acIdx-1,0);paintAc(its);}
+  else if(e.key==='Enter'){e.preventDefault();if(acIdx>=0&&its[acIdx])its[acIdx].click();}
+  else if(e.key==='Escape')closeAc();
+});
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))closeAc();});
+
+function paintAc(its){its.forEach((it,i)=>it.classList.toggle('sel',i===acIdx));its[acIdx]?.scrollIntoView({block:'nearest'});}
+function closeAc(){acEl.classList.remove('open');acEl.innerHTML='';acIdx=-1;}
+
+async function doSearch(){
+  const v=si.value.trim().toLowerCase();
+  if(!v)return closeAc();
+  const isKo=/[가-힣]/.test(v);
+
+  let res;
+  if(isKo){
+    // 캐시에서 한국어 매칭
+    res=koIndex.filter(x=>x.ko&&x.ko.includes(v));
+    // 아직 로드 안 된 항목이 있으면 일부 on-demand fetch
+    if(res.length<5&&!koLoaded){
+      const unk=koIndex.filter(x=>!x.ko).slice(0,80);
+      if(unk.length){
+        await Promise.all(unk.map(async item=>{
+          try{
+            const r=await fetch(API+'pokemon-species/'+item.id);
+            const d=await r.json();
+            const k=d.names.find(n=>n.language.name==='ko');
+            if(k)item.ko=k.name;
+          }catch{}
+        }));
+        res=koIndex.filter(x=>x.ko&&x.ko.includes(v));
+      }
+    }
+  } else {
+    // 영어 매칭
+    res=koIndex.filter(x=>x.en.includes(v));
+  }
+
+  res=res.slice(0,12);
+  if(!res.length)return closeAc();
+  renderAc(res);
+}
+
+function renderAc(res){
+  acEl.innerHTML='';acIdx=-1;
+  res.forEach(item=>{
+    const b=document.createElement('button');
+    b.className='ac-item';
+    const display=item.ko||item.en;
+    const secondary=item.ko?item.en:'';
+    b.innerHTML=`<span>${display}</span>${secondary?`<span style="font-size:11px;color:var(--muted)">${secondary}</span>`:''}<span class="ac-num">#${String(item.id).padStart(3,'0')}</span>`;
+    b.onclick=()=>{selectSpecies(item);closeAc();};
+    acEl.appendChild(b);
+  });
+  acEl.classList.add('open');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SPECIES SELECT → FORMS
+// ══════════════════════════════════════════════════════════════════════════════
+async function selectSpecies(item){
+  selectedSpecies={...item};
+  si.value=item.ko||item.en;
+  document.getElementById('addBtn').disabled=false;
+  const fs=document.getElementById('formSel');
+  fs.innerHTML='<option value="">로딩 중…</option>';
+  fs.disabled=true;
+  try{
+    const r=await fetch(API+'pokemon-species/'+item.id);
+    const d=await r.json();
+    const k=d.names.find(n=>n.language.name==='ko');
+    if(k){item.ko=k.name;selectedSpecies.ko=k.name;si.value=k.name;}
+    fs.innerHTML='';
+    d.varieties.forEach(v=>{
+      const o=document.createElement('option');
+      o.value=v.pokemon.name;
+      o.textContent=beautifyForm(v.pokemon.name,item.en);
+      if(v.is_default)o.selected=true;
+      fs.appendChild(o);
+    });
+    fs.disabled=false;
+    selectedSpecies.slug=fs.value;
+  }catch{fs.innerHTML='<option>로드 실패</option>';fs.disabled=false;selectedSpecies.slug=item.en;}
+}
+
+function beautifyForm(name,base){
+  if(name===base)return '기본 폼';
+  const s=name.replace(base+'-','').toLowerCase();
+  const m={alola:'알로라',alolan:'알로라',galar:'가라르',galarian:'가라르',hisui:'히스이',hisuian:'히스이',paldea:'팔데아',paldean:'팔데아',mega:'메가','mega-x':'메가 X','mega-y':'메가 Y',gmax:'거다이맥스',gigantamax:'거다이맥스',totem:'토템',origin:'오리진 폼',altered:'어나더 폼',sky:'하늘 폼',land:'육지 폼',speed:'스피드 폼',attack:'어택 폼',defense:'방어 폼',heat:'히트 폼',wash:'워시 폼',frost:'프로스트 폼',fan:'팬 폼',mow:'잔디깎기 폼',black:'검은 폼',white:'흰 폼',therian:'신령 폼',zen:'달마 모드','rapid-strike':'재빠른 연격','single-strike':'하나의 일격',primal:'원시회귀',crowned:'왕관 폼',hero:'히어로 폼',eternamax:'에테르나맥스','low-key':'로우키 폼',amped:'앰프 폼',midday:'한낮 폼',midnight:'한밤 폼',dusk:'황혼 폼',dawn:'새벽 폼','10':'10% 폼','50':'50% 폼',complete:'완전 폼',original:'오리지널 폼'};
+  return m[s]||(s.charAt(0).toUpperCase()+s.slice(1)+' 폼');
+}
+document.getElementById('formSel').addEventListener('change',function(){if(selectedSpecies)selectedSpecies.slug=this.value;});
+function toggleShiny(){isShiny=!isShiny;document.getElementById('shinyTgl').classList.toggle('on',isShiny);}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADD POKEMON
+// ══════════════════════════════════════════════════════════════════════════════
+async function addToCanvas(){
+  if(!selectedSpecies)return;
+  const slug=document.getElementById('formSel').value||selectedSpecies.en;
+  setOv(true,'포켓몬 정보 불러오는 중…');
+  try{
+    const r=await fetch(API+'pokemon/'+encodeURIComponent(slug));
+    if(!r.ok)throw new Error('not found');
+    const d=await r.json();
+    const hcm=d.height*10;
+    const img=isShiny
+      ?(d.sprites?.other?.['official-artwork']?.front_shiny||d.sprites?.front_shiny||d.sprites?.front_default)
+      :(d.sprites?.other?.['official-artwork']?.front_default||d.sprites?.front_default);
+    if(!img)throw new Error('이미지 없음');
+    setOv(true,'이미지 불러오는 중…');
+    await addImg({name:selectedSpecies.ko||selectedSpecies.en,sub:isShiny?'✨':'',hcm,url:img,type:'poke'});
+    showToast(`${selectedSpecies.ko||selectedSpecies.en} 추가!`);
+  }catch(e){showToast('실패: '+e.message);}
+  finally{setOv(false);}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HUMAN
+// ══════════════════════════════════════════════════════════════════════════════
+let humanData=null;
+function initDrag(){
+  const z=document.getElementById('uploadZone');
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('drag');});
+  z.addEventListener('dragleave',()=>z.classList.remove('drag'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)procHuman(f);});
+}
+function onHumanFile(e){const f=e.target.files[0];if(f)procHuman(f);}
+function procHuman(file){
+  const rd=new FileReader();
+  rd.onload=ev=>{
+    humanData=ev.target.result;
+    document.getElementById('humanThumb').src=humanData;
+    document.getElementById('humanFname').textContent=file.name;
+    document.getElementById('humanPreview').style.display='flex';
+    document.getElementById('uploadZone').style.display='none';
+    document.getElementById('addHumanBtn').disabled=false;
+  };
+  rd.readAsDataURL(file);
+}
+function resetHuman(){
+  humanData=null;
+  document.getElementById('humanPreview').style.display='none';
+  document.getElementById('uploadZone').style.display='block';
+  document.getElementById('humanFile').value='';
+  document.getElementById('addHumanBtn').disabled=true;
+}
+async function addHumanToCanvas(){
+  if(!humanData)return;
+  const h=parseInt(document.getElementById('humanH').value)||170;
+  setOv(true,'사람 추가 중…');
+  try{
+    await addImg({name:'사람',sub:h+'cm',hcm:h,url:humanData,type:'human'});
+    showToast('사람 추가!');
+  }catch(e){showToast('실패: '+e.message);}
+  finally{setOv(false);}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CORE: ADD IMAGE — 높이 기준 정확한 비율
+// ══════════════════════════════════════════════════════════════════════════════
+const PX_PER_CM=2.0;
+
+// 투명 영역을 잘라내고 실제 콘텐츠의 bounding box를 반환
+function cropTransparent(imgEl){
+  const c=document.createElement('canvas');
+  c.width=imgEl.naturalWidth||imgEl.width;
+  c.height=imgEl.naturalHeight||imgEl.height;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(imgEl,0,0);
+  const data=ctx.getImageData(0,0,c.width,c.height).data;
+  let top=c.height,bottom=0,left=c.width,right=0;
+  for(let y=0;y<c.height;y++){
+    for(let x=0;x<c.width;x++){
+      const a=data[(y*c.width+x)*4+3]; // alpha
+      if(a>10){ // threshold: alpha > 10
+        if(y<top)top=y;
+        if(y>bottom)bottom=y;
+        if(x<left)left=x;
+        if(x>right)right=x;
+      }
+    }
+  }
+  // 안전 처리: 완전 투명이면 원본 그대로
+  if(bottom<=top||right<=left) return {canvas:c,cw:c.width,ch:c.height};
+  const cw=right-left+1;
+  const ch=bottom-top+1;
+  const cropped=document.createElement('canvas');
+  cropped.width=cw;
+  cropped.height=ch;
+  cropped.getContext('2d').drawImage(c,left,top,cw,ch,0,0,cw,ch);
+  return {canvas:cropped,cw,ch};
+}
+
+function addImg({name,sub,hcm,url,type}){
+  return new Promise((res,rej)=>{
+    const id=++uid;
+    const imgEl=new Image();
+    imgEl.crossOrigin='anonymous';
+    imgEl.onload=()=>{
+      // 1) 투명 여백 crop
+      const {canvas:cropped,cw,ch}=cropTransparent(imgEl);
+
+      // 2) crop된 이미지 높이를 기준으로 targetH 맞추기
+      const targetH=hcm*PX_PER_CM;
+      const scale=targetH/ch;
+      const finalW=Math.ceil(cw*scale);
+      const finalH=Math.ceil(ch*scale);
+
+      // 3) 최종 크기로 그린 캔버스 생성
+      const finalCanvas=document.createElement('canvas');
+      finalCanvas.width=finalW;
+      finalCanvas.height=finalH;
+      finalCanvas.getContext('2d').drawImage(cropped,0,0,finalW,finalH);
+
+      // 4) fabric Image (scale=1, 이미 정확한 크기)
+      const fImg=new fabric.Image(finalCanvas,{
+        originX:'center',originY:'bottom',left:0,top:0,
+      });
+
+      const label=`${name}${sub?' · '+sub:''}`;
+      const nt=new fabric.Text(label,{
+        fontSize:12,fontFamily:'Outfit',fill:'#e0dff0',fontWeight:'600',
+        originX:'center',originY:'bottom',left:0,top:-(finalH+16),
+      });
+      const ht=new fabric.Text((hcm/100).toFixed(2)+'m',{
+        fontSize:11,fontFamily:'Outfit',fill:'#7a7990',
+        originX:'center',originY:'bottom',left:0,top:-(finalH+3),
+      });
+
+      const grp=new fabric.Group([fImg,nt,ht],{
+        originX:'center',originY:'bottom',
+        left:100+(items.length%8)*140,
+        top:fc.height-30,
+        lockScalingX:true,lockScalingY:true,
+        data:{id,name,sub,hcm,type},
+      });
+
+      fc.add(grp);
+      fc.setActiveObject(grp);
+      items.push({id,name,hcm,obj:grp,thumb:url});
+      updateQ();updateCnt();updateEmpty();
+      fc.renderAll();
+      res();
+    };
+    imgEl.onerror=()=>rej(new Error('이미지 로드 실패'));
+    imgEl.src=url;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// QUEUE
+// ══════════════════════════════════════════════════════════════════════════════
+function updateQ(){
+  const el=document.getElementById('queue');
+  if(!items.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:6px 0">아직 없어요</div>';return;}
+  el.innerHTML='';
+  items.forEach(item=>{
+    const d=document.createElement('div');
+    d.className='qi';
+    d.innerHTML=`
+      <img src="${item.thumb}" alt="${item.name}" onerror="this.style.display='none'">
+      <div class="qi-info">
+        <div class="qi-name">${item.name}${item.obj.data.sub?.includes('✨')?'<span class="s-badge">✨</span>':''}</div>
+        <div class="qi-sub">${(item.hcm/100).toFixed(2)}m</div>
+      </div>
+      <button class="qi-del" onclick="removeItem(${item.id},event)">✕</button>`;
+    d.onclick=()=>{fc.setActiveObject(item.obj);fc.renderAll();};
+    el.appendChild(d);
+  });
+}
+function removeItem(id,e){
+  e?.stopPropagation();
+  const i=items.findIndex(x=>x.id===id);
+  if(i<0)return;
+  fc.remove(items[i].obj);
+  items.splice(i,1);
+  updateQ();updateCnt();updateEmpty();fc.renderAll();
+}
+function removeSelected(){
+  const sel=fc.getActiveObjects();
+  if(!sel.length)return;
+  sel.forEach(o=>{fc.remove(o);const i=items.findIndex(x=>x.obj===o);if(i>=0)items.splice(i,1);});
+  fc.discardActiveObject();
+  updateQ();updateCnt();updateEmpty();fc.renderAll();
+}
+function clearCanvas(){
+  if(!items.length)return;
+  if(!confirm('전부 삭제할까요?'))return;
+  fc.clear();items=[];
+  updateQ();updateCnt();updateEmpty();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SORT
+// ══════════════════════════════════════════════════════════════════════════════
+function sortByHeight(){
+  if(items.length<2){showToast('2개 이상 추가해주세요');return;}
+  const sorted=[...items].sort((a,b)=>b.hcm-a.hcm);
+  const gap=24;
+  const totalW=sorted.reduce((s,x)=>s+x.obj.width*(x.obj.scaleX||1),0)+gap*(sorted.length-1);
+  let x=(fc.width/currentZoom - totalW)/2 + (fc.viewportTransform?(-fc.viewportTransform[4]/currentZoom):0);
+  const baseY=fc.height-30;
+  sorted.forEach(item=>{
+    const w=item.obj.width*(item.obj.scaleX||1);
+    item.obj.animate({left:x+w/2,top:baseY},{
+      duration:500,onChange:fc.renderAll.bind(fc),
+      easing:fabric.util.ease.easeInOutCubic,
+    });
+    x+=w+gap;
+  });
+  showToast('키순으로 정렬 📏');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+function updateCnt(){document.getElementById('cnt').textContent=items.length+'개';}
+function updateEmpty(){document.getElementById('emptySt').style.display=items.length?'none':'flex';}
+function setOv(show,txt=''){const o=document.getElementById('ov');o.classList.toggle('show',show);if(txt)document.getElementById('ovTxt').textContent=txt;}
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
+</script>
+</body>
+</html>
